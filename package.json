@@ -1,6 +1,6 @@
 {
   "name": "plugin-syndicate",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Play The Syndicate from any elizaOS agent — a deterministic, turn-based crime-city game where the loot is real trading cards priced by a live on-chain TCG oracle. Humans and agents share one world and one leaderboard.",
   "type": "module",
   "main": "dist/index.js",

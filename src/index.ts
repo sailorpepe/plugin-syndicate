@@ -23,6 +23,8 @@
 import type {
   Plugin,
   Action,
+  Provider,
+  ProviderResult,
   IAgentRuntime,
   Memory,
   State,
@@ -34,16 +36,20 @@ import type {
 const GAME_API = "https://play.the-undesirables.com/api/game";
 const SCORES_API = "https://play.the-undesirables.com/api/scores";
 const SKILL_URL = "https://play.the-undesirables.com/SKILL.md";
-const PLUGIN_VERSION = "0.1.0";
+const PLUGIN_VERSION = "0.1.1";
+const FETCH_TIMEOUT_MS = 15_000;
 
 // ============================================================
 // Session bookkeeping — one live game per agent, in-process.
 // The server holds all state; losing this map only means the
 // agent starts a fresh syndicate (sessions expire in 7 idle
-// days server-side anyway).
+// days server-side anyway). The last view is cached so the
+// context provider can narrate game state with ZERO extra
+// API calls.
 // ============================================================
 
 const sessions = new Map<string, string>(); // agentId -> sessionId
+const lastViews = new Map<string, Record<string, unknown>>(); // agentId -> last view
 
 function sessionFor(runtime: IAgentRuntime): string | undefined {
   const configured = runtime.getSetting?.("SYNDICATE_SESSION_ID");
@@ -51,22 +57,50 @@ function sessionFor(runtime: IAgentRuntime): string | undefined {
   return sessions.get(String(runtime.agentId));
 }
 
+/** Marks errors the agent can act on (start a new game, wait out the limit). */
+class GameError extends Error {
+  constructor(message: string, readonly expired = false) { super(message); }
+}
+
+function toGameError(status: number, serverMsg: string): GameError {
+  if (status === 404) return new GameError("Session unknown or expired (games expire after 7 idle days).", true);
+  if (status === 429) return new GameError("The city is rate-limited (30 calls/min/IP). Wait a minute, then try again.");
+  if (status === 409) return new GameError(serverMsg || "Game over — start a new syndicate with SYNDICATE_NEW.");
+  return new GameError(serverMsg || `HTTP ${status}`);
+}
+
 async function api(body: Record<string, unknown>): Promise<Record<string, unknown>> {
   const res = await fetch(GAME_API, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
-  const data = (await res.json()) as Record<string, unknown>;
-  if (!res.ok) throw new Error(String((data as { error?: string }).error || `HTTP ${res.status}`));
+  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!res.ok) throw toGameError(res.status, String((data as { error?: string }).error || ""));
   return data;
 }
 
 async function apiView(sessionId: string): Promise<Record<string, unknown>> {
-  const res = await fetch(`${GAME_API}?id=${encodeURIComponent(sessionId)}`);
-  const data = (await res.json()) as Record<string, unknown>;
-  if (!res.ok) throw new Error(String((data as { error?: string }).error || `HTTP ${res.status}`));
+  const res = await fetch(`${GAME_API}?id=${encodeURIComponent(sessionId)}`, {
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!res.ok) throw toGameError(res.status, String((data as { error?: string }).error || ""));
   return data;
+}
+
+/** On session expiry, forget it so validate() steers the agent to SYNDICATE_NEW. */
+function handleGameError(runtime: IAgentRuntime, e: unknown): string {
+  if (e instanceof GameError && e.expired) {
+    sessions.delete(String(runtime.agentId));
+    lastViews.delete(String(runtime.agentId));
+    return `${e.message} Start fresh with SYNDICATE_NEW.`;
+  }
+  if (e instanceof Error && e.name === "TimeoutError") {
+    return "The game server did not answer within 15s — it may be waking up. Try again shortly.";
+  }
+  return e instanceof Error ? e.message : String(e);
 }
 
 // Compact narration so the model sees the day without drowning in JSON.
@@ -90,7 +124,12 @@ function summarizeView(v: Record<string, unknown>): string {
   ];
   if (events.length) lines.push("", "What happened:", ...events.map((e) => `  ${e}`));
   if (v.gameOver) lines.push("", "GAME OVER — start a new syndicate with SYNDICATE_NEW.");
+  if (v.sessionId) lines.push("", `(session ${v.sessionId} — set SYNDICATE_SESSION_ID to resume it after a restart)`);
   return lines.join("\n");
+}
+
+function remember(runtime: IAgentRuntime, view: Record<string, unknown>): void {
+  lastViews.set(String(runtime.agentId), view);
 }
 
 // ============================================================
@@ -131,11 +170,12 @@ const newGameAction: Action = {
     try {
       const view = await api({ action: "new", name: name.slice(0, 32), model: `elizaos/${runtime.character?.name || "agent"}` });
       sessions.set(String(runtime.agentId), String(view.sessionId));
+      remember(runtime, view);
       const text = `New syndicate founded. Read the rules once: ${SKILL_URL}\n\n${summarizeView(view)}`;
       if (callback) await callback({ text });
       return { success: true, text, data: { sessionId: String(view.sessionId), view } };
     } catch (e) {
-      const text = `Could not start a game: ${e instanceof Error ? e.message : String(e)}`;
+      const text = `Could not start a game: ${handleGameError(runtime, e)}`;
       if (callback) await callback({ text });
       return { success: false, text };
     }
@@ -170,11 +210,12 @@ const stateAction: Action = {
     }
     try {
       const view = await apiView(sessionId);
+      remember(runtime, view);
       const text = summarizeView(view);
       if (callback) await callback({ text });
       return { success: true, text, data: { view } };
     } catch (e) {
-      const text = `Could not read the game: ${e instanceof Error ? e.message : String(e)}`;
+      const text = `Could not read the game: ${handleGameError(runtime, e)}`;
       if (callback) await callback({ text });
       return { success: false, text };
     }
@@ -227,11 +268,12 @@ const moveAction: Action = {
     }
     try {
       const view = await api({ action: "orders", sessionId, orders });
+      remember(runtime, view);
       const text = summarizeView(view);
       if (callback) await callback({ text });
       return { success: true, text, data: { view } };
     } catch (e) {
-      const text = `The engine rejected the orders: ${e instanceof Error ? e.message : String(e)}`;
+      const text = `The engine rejected the orders: ${handleGameError(runtime, e)}`;
       if (callback) await callback({ text });
       return { success: false, text };
     }
@@ -259,7 +301,7 @@ const leaderboardAction: Action = {
     callback?: HandlerCallback
   ): Promise<ActionResult | undefined> => {
     try {
-      const res = await fetch(SCORES_API);
+      const res = await fetch(SCORES_API, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
       const data = (await res.json()) as { scores?: { syndicate: string; headline: string; day: number; value: number; agent?: boolean; model?: string }[] };
       const rows = (data.scores || []).slice(0, 10);
       const text = rows.length
@@ -281,6 +323,29 @@ const leaderboardAction: Action = {
 };
 
 // ============================================================
+// Provider — narrates the cached game state into context on
+// every message, with ZERO extra API calls. The cache is only
+// written by the actions, so this can never spam the server.
+// ============================================================
+
+const syndicateProvider: Provider = {
+  name: "syndicate-game-state",
+  description: "Current state of the agent's Syndicate game (cached from the last action; no network calls)",
+  get: async (runtime: IAgentRuntime, _message: Memory, _state?: State): Promise<ProviderResult> => {
+    const view = lastViews.get(String(runtime.agentId));
+    if (!view || !sessionFor(runtime)) return { text: "" };
+    const territory = (view.territory || {}) as Record<string, unknown>;
+    const stash = (view.stash || {}) as Record<string, unknown>;
+    return {
+      text: `[The Syndicate — day ${view.day}: capital $${view.capital}, heat ${view.heat}, ` +
+        `${territory.ownedTiles}/${territory.tilesToWin} tiles, stash $${stash.fenceValue}. ` +
+        `Use SYNDICATE_STATE for detail, SYNDICATE_MOVE to play the day.]`,
+      data: { view },
+    };
+  },
+};
+
+// ============================================================
 // Plugin
 // ============================================================
 
@@ -288,7 +353,7 @@ export const syndicatePlugin: Plugin = {
   name: "plugin-syndicate",
   description: `The Syndicate v${PLUGIN_VERSION} — agent-playable crime-city strategy with oracle-priced loot. Rules: ${SKILL_URL}`,
   actions: [newGameAction, stateAction, moveAction, leaderboardAction],
-  providers: [],
+  providers: [syndicateProvider],
   evaluators: [],
 };
 
