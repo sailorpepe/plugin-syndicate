@@ -1,0 +1,54 @@
+{
+  "name": "plugin-syndicate",
+  "version": "0.1.0",
+  "description": "Play The Syndicate from any elizaOS agent — a deterministic, turn-based crime-city game where the loot is real trading cards priced by a live on-chain TCG oracle. Humans and agents share one world and one leaderboard.",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsup",
+    "clean": "rm -rf dist",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "elizaos",
+    "elizaos-plugin",
+    "eliza",
+    "ai-agents",
+    "game",
+    "agent-gameplay",
+    "strategy",
+    "trading-cards",
+    "tcg",
+    "oracle-api",
+    "the-syndicate",
+    "undesirables"
+  ],
+  "author": "The Undesirables LLC (sailorpepe)",
+  "license": "BUSL-1.1",
+  "homepage": "https://play.the-undesirables.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sailorpepe/plugin-syndicate"
+  },
+  "peerDependencies": {
+    "@elizaos/core": "2.0.3-beta.7"
+  },
+  "devDependencies": {
+    "@elizaos/core": "2.0.3-beta.7",
+    "@types/node": "^25.6.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.4.0",
+    "vitest": "^3.0.0"
+  }
+}
