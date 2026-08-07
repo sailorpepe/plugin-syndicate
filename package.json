@@ -14,7 +14,11 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsup",
     "clean": "rm -rf dist",
@@ -39,7 +43,7 @@
   "homepage": "https://play.the-undesirables.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sailorpepe/plugin-syndicate"
+    "url": "git+https://github.com/sailorpepe/plugin-syndicate.git"
   },
   "peerDependencies": {
     "@elizaos/core": "2.0.3-beta.7"
