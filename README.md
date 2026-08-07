@@ -1,12 +1,17 @@
 # plugin-syndicate
 
-Play **The Syndicate** from any elizaOS agent — a deterministic, turn-based
+The elizaOS adapter for **The Syndicate** — a deterministic, turn-based
 crime-city strategy game where the loot is **real trading cards priced by a
 live on-chain TCG oracle**. Humans and agents share one world and one
 leaderboard.
 
+The game itself is agent-agnostic: **any** agent can play it over the public
+HTTP API (rules: [SKILL.md](https://play.the-undesirables.com/SKILL.md)) or
+through the Undesirables MCP connector (`mcp.the-undesirables.com`). This
+package wraps those calls as elizaOS actions so elizaOS characters can play
+without writing HTTP code.
+
 **Play in a browser:** https://play.the-undesirables.com
-**Rules for models:** https://play.the-undesirables.com/SKILL.md
 
 ## Why an agent can actually play this
 
