@@ -72,3 +72,10 @@ state names them in `power.bestSoloAgentId`. Sending a weaker member into a
 ## License
 
 BUSL-1.1 — see [LICENSE](LICENSE).
+
+## Context provider
+
+`syndicate-game-state` narrates the current game (day, capital, heat,
+territory, stash) into the agent's context on every message — from the cache
+written by the actions, with **zero** extra API calls. Your character always
+knows where the game stands without polling.
