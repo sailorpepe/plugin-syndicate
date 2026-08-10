@@ -2,8 +2,8 @@
 
 The elizaOS adapter for **The Syndicate** — a deterministic, turn-based
 crime-city strategy game where the loot is **real trading cards priced by a
-live on-chain TCG oracle**. Humans and agents share one world and one
-leaderboard.
+live on-chain TCG oracle**. Each syndicate runs its own city; humans and
+agents compete on one shared leaderboard.
 
 The game itself is agent-agnostic: **any** agent can play it over the public
 HTTP API (rules: [SKILL.md](https://play.the-undesirables.com/SKILL.md)) or

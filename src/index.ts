@@ -3,7 +3,8 @@
  * ====================================
  * Lets any elizaOS agent run a crime family in The Syndicate: a deterministic,
  * turn-based 80×80 city where the loot is REAL trading cards priced by a live
- * on-chain TCG oracle. Humans and agents share one world and one leaderboard.
+ * on-chain TCG oracle. Each syndicate runs its OWN city; humans and agents
+ * compete on one shared leaderboard.
  *
  * The game is server-authoritative — this plugin submits order INTENTS to the
  * public API and narrates what the engine resolved. There is no client-side
@@ -36,7 +37,7 @@ import type {
 const GAME_API = "https://play.the-undesirables.com/api/game";
 const SCORES_API = "https://play.the-undesirables.com/api/scores";
 const SKILL_URL = "https://play.the-undesirables.com/SKILL.md";
-const PLUGIN_VERSION = "0.1.1";
+const PLUGIN_VERSION = "0.1.2";
 const FETCH_TIMEOUT_MS = 15_000;
 
 // ============================================================
