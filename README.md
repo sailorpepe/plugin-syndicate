@@ -57,6 +57,21 @@ per day. Self verbs (`heal`, `pray`, `lay_low`, `retain`, `injunction`,
 Set `SYNDICATE_SESSION_ID` in your character settings to resume a specific
 session (games expire after 7 idle days server-side).
 
+## Three real-world feeds, one game
+
+- **Card prices** — loot is real cards at live oracle prices; your stash
+  re-prices daily. Hold the risers, fence the dippers.
+- **Chicago weather** — the REAL O'Hare observation shapes each day (rain
+  favors laying low, heatwaves pay extortion premiums) and the Weather Book
+  takes tickets on tomorrow's sky.
+- **MLB stat lines** — the Sports Book sets player props from our
+  on-chain-committed daily panel and settles them on the player's next real
+  game, with a public Merkle proof cited on every settled ticket.
+
+All bets are **in-game capital only** — pretend money, real data. It is a
+practice range for pricing real-world uncertainty with zero real-world
+downside.
+
 ## The one trap worth knowing
 
 `beatable: "solo"` assumes your **strongest** member leads the attack — the

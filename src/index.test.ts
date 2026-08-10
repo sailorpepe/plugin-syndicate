@@ -37,6 +37,10 @@ const VIEW = {
     { tileId: 11, type: "bank", vault: 9000, beatable: "no" },
   ],
   events: ["[SUCCESS] Rogue captured casino!"],
+  weather: { station: "KORD", condition: "Light Rain", tempF: 55, kind: "rain" },
+  contract: { desc: "extort 2 businesses (1 done) — $1,200 reward, 5 days left", reward: 1200 },
+  weatherBet: { on: "rain", stake: 300, placedTick: 2 },
+  sportsBet: { playerName: "Yordan Alvarez (Houston Astros)", prop: "hr", stake: 400, placedRealDate: "2026-08-10" },
 };
 
 function mockFetch(status: number, body: unknown) {
@@ -102,6 +106,10 @@ describe("SYNDICATE_STATE", () => {
     const r = (await act("SYNDICATE_STATE").handler(rt("cfg", { SYNDICATE_SESSION_ID: "abc123" }), msg(), undefined, undefined, async () => {})) as any;
     expect(r.success).toBe(true);
     expect(r.text).toContain("#10 casino vault $2000 (solo)");
+    expect(r.text).toContain("Light Rain, 55°F — rain");
+    expect(r.text).toContain("extort 2 businesses");
+    expect(r.text).toContain("$300 on rain");
+    expect(r.text).toContain("Yordan Alvarez");
     expect(r.text).not.toContain("#11 bank"); // unbeatable targets stay out of the summary
     expect(r.text).toContain("Chad (hp 40, hospital)");
   });

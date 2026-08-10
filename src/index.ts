@@ -37,7 +37,7 @@ import type {
 const GAME_API = "https://play.the-undesirables.com/api/game";
 const SCORES_API = "https://play.the-undesirables.com/api/scores";
 const SKILL_URL = "https://play.the-undesirables.com/SKILL.md";
-const PLUGIN_VERSION = "0.1.2";
+const PLUGIN_VERSION = "0.2.0";
 const FETCH_TIMEOUT_MS = 15_000;
 
 // ============================================================
@@ -113,8 +113,16 @@ function summarizeView(v: Record<string, unknown>): string {
   const stash = (v.stash || {}) as Record<string, unknown>;
   const targets = Array.isArray(v.targets) ? (v.targets as Record<string, unknown>[]) : [];
   const beatable = targets.filter((t) => t.beatable !== "no").slice(0, 8);
+  const weather = v.weather as Record<string, unknown> | undefined;
+  const contract = v.contract as Record<string, unknown> | undefined;
+  const wBet = v.weatherBet as Record<string, unknown> | undefined;
+  const sBet = v.sportsBet as Record<string, unknown> | undefined;
   const lines = [
     `Day ${v.day} — capital $${v.capital}, heat ${v.heat}, wanted ${v.wantedLevel}`,
+    ...(weather ? [`Chicago weather (REAL, shifts today's odds): ${weather.condition}, ${weather.tempF}°F — ${weather.kind}`] : []),
+    ...(contract ? [`Commission contract: ${(contract as { desc?: string }).desc}`] : []),
+    ...(wBet ? [`Open weather ticket: $${wBet.stake} on ${wBet.on}`] : []),
+    ...(sBet ? [`Open sports ticket: $${sBet.stake} on ${sBet.playerName} (${sBet.prop})`] : []),
     `Territory: ${territory.ownedTiles}/${territory.tilesToWin} tiles toward the Kingpin win`,
     `Stash: ${stash.cards} card(s), fence value $${stash.fenceValue}`,
     `Crew: ${crew.map((c) => `${c.name} (hp ${c.hp}${(c as { unavailable?: string }).unavailable ? `, ${(c as { unavailable?: string }).unavailable}` : ""})`).join(" · ")}`,
@@ -226,7 +234,7 @@ const stateAction: Action = {
 const moveAction: Action = {
   name: "SYNDICATE_MOVE",
   description:
-    "Submit one day of orders to The Syndicate and get back what the engine resolved. Orders are [{agentId, targetId, actionType, squad?}] — one per crew member. Self verbs (heal, pray, lay_low, retain, injunction, cook_books, audit, launder) may omit targetId. Check SYNDICATE_STATE first: 'beatable: solo' assumes your STRONGEST member leads.",
+    "Submit one day of orders to The Syndicate and get back what the engine resolved. Orders are [{agentId, targetId, actionType, squad?}] — one per crew member. Self verbs (heal, pray, lay_low, retain, injunction, cook_books, audit, launder, weather_bet, sports_bet) may omit targetId. Betting (in-game capital only): {actionType:'weather_bet', on:'rain', stake:500} on tomorrow's REAL Chicago weather; {actionType:'sports_bet', playerId, prop:'hr', stake:500} on a real MLB player's next game — pick playerId from sportsBook.featured. Check SYNDICATE_STATE first: 'beatable: solo' assumes your STRONGEST member leads.",
   similes: ["SYNDICATE_ORDERS", "PLAY_TURN", "RUN_THE_DAY"],
   parameters: [
     {
