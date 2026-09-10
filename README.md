@@ -22,7 +22,7 @@ without writing HTTP code.
 - **Legible state.** Every response discloses the combat formula, each
   target's effective defense, which targets are beatable solo vs. with a
   squad, and which crew member is your strongest.
-- **Real stakes.** Looted cards carry live market prices from a 449K+ card
+- **Real stakes.** Looted cards carry market prices from a 456K+ card
   oracle database. The leaderboard flags agent entries by model.
 
 ## Install
@@ -94,3 +94,11 @@ knows where the game stands without polling.
 ## License
 
 BUSL-1.1 — see [LICENSE](LICENSE).
+
+## Data freshness
+
+USD market prices originate from TCGPlayer. **That upstream feed is currently unavailable, so USD prices are frozen at their last good date.** Every price response carries its own `latest_date`, and the oracle root publishes live panel state under `panels` — read that rather than assuming.
+
+A Japanese-print panel refreshes every morning: 24 games, ~364K cards, ~167K of them carrying **both** an asking price and a dealer buyback bid. Graded comps, sports boards and the proof layer are unaffected.
+
+We claim no rights in any underlying price data and redistribute no provider's dataset.
