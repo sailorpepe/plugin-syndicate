@@ -59,7 +59,7 @@ session (games expire after 7 idle days server-side).
 
 ## Three real-world feeds, one game
 
-- **Card prices** — loot is real cards at live oracle prices; your stash
+- **Card prices** — loot is real cards at oracle prices (the USD panel is frozen at its last good date, 2026-09-07, so loot values are the last published prices until a live USD series returns); your stash
   re-prices daily. Hold the risers, fence the dippers.
 - **Chicago weather** — the REAL O'Hare observation shapes each day (rain
   favors laying low, heatwaves pay extortion premiums) and the Weather Book
